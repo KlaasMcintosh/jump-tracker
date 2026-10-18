@@ -1,0 +1,7 @@
+{
+  "name": "jump_detector",
+  "version": "0.1.0",
+  "description": "Hardware-independent takeoff/landing detector for flight-time jump height",
+  "frameworks": "*",
+  "platforms": "*"
+}

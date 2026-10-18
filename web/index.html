@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101512">
+  <title>Jump Tracker</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #101512;
+      --panel: #19211c;
+      --panel-raised: #202a24;
+      --line: #344139;
+      --text: #f2f5ee;
+      --muted: #a0ada2;
+      --lime: #c6f36b;
+      --lime-ink: #18220e;
+      --coral: #ff856e;
+      --cyan: #8edbd0;
+      --display-font: "Avenir Next", "Trebuchet MS", sans-serif;
+      --body-font: "Avenir Next", "Trebuchet MS", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 90% 2%, rgba(198, 243, 107, .08), transparent 35rem),
+        repeating-linear-gradient(135deg, transparent 0 34px, rgba(255, 255, 255, .012) 35px 36px),
+        var(--page);
+      font-family: var(--body-font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: min(100% - 36px, 720px);
+      margin: 0 auto;
+      padding: 34px 0 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 27px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: var(--lime);
+      border: 1px solid #50603d;
+      border-radius: 11px;
+      background: #202b1c;
+    }
+
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-name { margin: 0; font-size: 16px; font-weight: 700; }
+    .brand-kicker { margin: 4px 0 0; color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+
+    .connection-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .state-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #68746b;
+      box-shadow: 0 0 0 3px rgba(104, 116, 107, .14);
+    }
+
+    .connection-state[data-connected="true"] { color: var(--lime); }
+    .connection-state[data-connected="true"] .state-dot {
+      background: var(--lime);
+      box-shadow: 0 0 0 3px rgba(198, 243, 107, .15);
+    }
+
+    .hero {
+      padding: 38px 0 30px;
+      animation: arrive .5s ease-out both;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 13px;
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 18px;
+      height: 2px;
+      background: var(--cyan);
+      content: "";
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--display-font);
+      font-size: 42px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .metric-panel {
+      position: relative;
+      overflow: hidden;
+      min-height: 254px;
+      padding: 27px 28px 25px;
+      border: 1px solid #3d4b3a;
+      border-radius: 8px;
+      background: linear-gradient(115deg, rgba(198, 243, 107, .055), transparent 56%), var(--panel);
+      animation: arrive .55s .08s ease-out both;
+    }
+
+    .metric-panel::after {
+      position: absolute;
+      top: -100px;
+      right: -72px;
+      width: 245px;
+      height: 245px;
+      border: 1px solid rgba(198, 243, 107, .09);
+      border-radius: 50%;
+      box-shadow: 0 0 0 28px rgba(198, 243, 107, .025), 0 0 0 58px rgba(198, 243, 107, .018);
+      content: "";
+      pointer-events: none;
+    }
+
+    .metric-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+    }
+
+    .metric-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .metric-value {
+      min-width: 0;
+      color: var(--lime);
+      font-family: var(--display-font);
+      font-size: 104px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      line-height: .95;
+    }
+
+    .metric-unit { color: #dae4d4; font-size: 18px; font-weight: 600; }
+
+    .metric-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 23px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric-foot p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .connect-button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 17px;
+      color: var(--lime-ink);
+      border: 0;
+      border-radius: 6px;
+      background: var(--lime);
+      font: 700 13px var(--body-font);
+      cursor: pointer;
+      transition: transform .16s ease, background .16s ease;
+    }
+
+    .connect-button:hover { transform: translateY(-1px); background: #d4fa89; }
+    .connect-button:active { transform: translateY(0); }
+    .connect-button:disabled { cursor: wait; opacity: .7; }
+    .connect-button svg { width: 17px; height: 17px; }
+
+    .message {
+      min-height: 19px;
+      margin: 13px 1px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .message[data-error="true"] { color: var(--coral); }
+
+    .history-section {
+      margin-top: 38px;
+      animation: arrive .55s .16s ease-out both;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-heading h2 { margin: 0; font-size: 17px; font-weight: 700; }
+    .jump-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+    .history-list {
+      display: grid;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      min-height: 66px;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(52, 65, 57, .72);
+      animation: arrive .24s ease-out both;
+    }
+
+    .rep-number {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rep-time { color: #d6dfd5; font-size: 13px; }
+    .rep-value { color: var(--lime); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .rep-value span { color: var(--muted); font-size: 11px; font-weight: 500; }
+
+    .empty-history {
+      padding: 26px 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 14px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-raised);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      transition: border-color .16s ease, color .16s ease, background .16s ease;
+    }
+
+    .live-status::before {
+      width: 10px;
+      height: 10px;
+      flex: none;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .live-status[data-tone="ready"] { color: var(--lime); border-color: #50603d; background: #1e2a19; }
+    .live-status[data-tone="air"] { color: var(--cyan); border-color: #3b5f59; }
+    .live-status[data-tone="warn"] { color: var(--coral); border-color: #6a3d34; }
+
+    .metric-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-details strong { color: var(--text); font-weight: 700; }
+
+    .rep-detail { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+    .clear-button {
+      padding: 4px 0;
+      color: var(--muted);
+      border: 0;
+      background: none;
+      font: 600 12px var(--body-font);
+      cursor: pointer;
+    }
+
+    .clear-button:hover { color: var(--coral); }
+    .clear-button[data-confirm="true"] { color: var(--coral); }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      main { width: min(100% - 28px, 720px); padding-top: 22px; }
+      header { padding-bottom: 21px; }
+      .brand-mark { width: 34px; height: 34px; }
+      .connection-state { font-size: 11px; }
+      .hero { padding: 31px 0 24px; }
+      h1 { font-size: 32px; }
+      .metric-panel { min-height: 233px; padding: 23px 20px 19px; }
+      .metric-value-row { margin-top: 28px; }
+      .metric-value { font-size: 76px; }
+      .metric-foot { align-items: flex-end; }
+      .metric-foot p { max-width: 145px; line-height: 1.45; }
+      .connect-button { min-height: 44px; padding: 0 12px; font-size: 12px; }
+      .history-section { margin-top: 31px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 17.5h4l2.2-7 3.1 9 2.1-6H20" />
+          </svg>
+        </span>
+        <div>
+          <p class="brand-name">Jump Tracker</p>
+          <p class="brand-kicker">Performance log</p>
+        </div>
+      </div>
+      <div class="connection-state" id="connectionState" data-connected="false" role="status" aria-live="polite">
+        <span class="state-dot" aria-hidden="true"></span>
+        <span id="connectionLabel">Not connected</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <p class="eyebrow">Vertical performance</p>
+      <h1 id="pageTitle">Your jump,<br>measured live.</h1>
+    </section>
+
+    <p class="live-status" id="liveStatus" data-tone="idle" role="status" aria-live="assertive">Not connected</p>
+
+    <section class="metric-panel" aria-labelledby="latestLabel">
+      <p class="metric-label" id="latestLabel">Latest jump</p>
+      <div class="metric-value-row" aria-live="polite" aria-atomic="true">
+        <span class="metric-value" id="latestValue">--.-</span>
+        <span class="metric-unit">cm</span>
+      </div>
+      <ul class="metric-details" id="latestDetails" hidden>
+        <li><strong id="latestInches"></strong> in</li>
+        <li><strong id="latestFlight"></strong> ms flight</li>
+        <li><strong id="latestPeak"></strong> g landing</li>
+      </ul>
+      <div class="metric-foot">
+        <p id="latestTime">Waiting for your first rep</p>
+        <button class="connect-button" id="connectButton" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 7h10a4 4 0 0 1 0 8h-1" />
+            <path d="M8 11 4 15l4 4M17 17H7a4 4 0 0 1 0-8h1" />
+            <path d="m16 13 4-4-4-4" />
+          </svg>
+          <span>Connect Tracker</span>
+        </button>
+      </div>
+    </section>
+    <p class="message" id="message" role="status" aria-live="polite">Connect your tracker to begin.</p>
+
+    <section class="history-section" aria-labelledby="historyTitle">
+      <div class="section-heading">
+        <h2 id="historyTitle">Jump history</h2>
+        <span class="jump-count"><span id="jumpCount">0 reps</span> · <button class="clear-button" id="clearButton" type="button">Clear</button></span>
+      </div>
+      <ol class="history-list" id="historyList" aria-live="polite">
+        <li class="empty-history" id="emptyHistory">Your completed reps will appear here.</li>
+      </ol>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // Protocol: see src/ble_link.h in the firmware.
+    const DEVICE_NAME = "JumpTracker-ESP32";
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const JUMP_UUID = "8f3d0a51-2c1e-4a8b-9f0d-6b1c2e7a9d01";
+    const STATUS_UUID = "8f3d0a51-2c1e-4a8b-9f0d-6b1c2e7a9d02";
+    const MAX_HISTORY = 200;
+    const STORAGE_KEY = "jump-tracker-history-v1";
+    const CM_PER_INCH = 2.54;
+
+    const STATE = { SETTLING: 0, ARMED: 1, FLIGHT: 2, LANDING: 3 };
+    const EVENT = { NONE: 0, ARMED: 1, TAKEOFF: 2, JUMP: 3, REJECTED: 4 };
+    const REJECT_TEXT = {
+      1: "too short to be a jump",
+      2: "free fall too long (dropped?)",
+      3: "no landing impact detected"
+    };
+    // Dips under this are routine noise (countermovement, handling) - don't flash a warning.
+    const MIN_REJECT_TO_SHOW_MS = 100;
+
+    const $ = (id) => document.getElementById(id);
+    const connectButton = $("connectButton");
+    const connectionState = $("connectionState");
+    const connectionLabel = $("connectionLabel");
+    const message = $("message");
+    const liveStatus = $("liveStatus");
+    const latestValue = $("latestValue");
+    const latestTime = $("latestTime");
+    const latestDetails = $("latestDetails");
+    const historyList = $("historyList");
+    const emptyHistory = $("emptyHistory");
+    const jumpCount = $("jumpCount");
+    const clearButton = $("clearButton");
+
+    let trackerDevice = null;
+    let characteristics = [];
+    let audioContext = null;
+    let history = loadHistory();
+    let lastDeviceJumpNumber = null;
+    let clearConfirmTimer = null;
+
+    function loadHistory() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveHistory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (_) {
+        // Storage unavailable (private mode); history just won't persist.
+      }
+    }
+
+    function setMessage(text, isError = false) {
+      message.textContent = text;
+      message.dataset.error = String(isError);
+    }
+
+    function setLiveStatus(text, tone) {
+      liveStatus.textContent = text;
+      liveStatus.dataset.tone = tone;
+    }
+
+    function setConnection(connected) {
+      connectionState.dataset.connected = String(connected);
+      connectionLabel.textContent = connected ? "Connected" : "Not connected";
+      connectButton.querySelector("span").textContent = connected ? "Disconnect" : "Connect Tracker";
+      if (!connected) setLiveStatus("Not connected", "idle");
+    }
+
+    function playChime() {
+      if (!audioContext || audioContext.state !== "running") return;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const start = audioContext.currentTime;
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(740, start);
+      oscillator.frequency.exponentialRampToValueAtTime(1040, start + 0.11);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.14, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.19);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.2);
+    }
+
+    const formatTime = (date) =>
+      date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+
+    function renderLatest() {
+      const jump = history[history.length - 1];
+      if (!jump) {
+        latestValue.textContent = "--.-";
+        latestTime.textContent = "Waiting for your first rep";
+        latestDetails.hidden = true;
+        return;
+      }
+      latestValue.textContent = jump.heightCm.toFixed(1);
+      latestTime.textContent = `Rep ${history.length} · ${formatTime(new Date(jump.time))}`;
+      $("latestInches").textContent = (jump.heightCm / CM_PER_INCH).toFixed(1);
+      $("latestFlight").textContent = jump.flightMs.toFixed(0);
+      $("latestPeak").textContent = jump.peakG.toFixed(1);
+      latestDetails.hidden = false;
+    }
+
+    function historyItem(jump, rep) {
+      const item = document.createElement("li");
+      item.className = "history-item";
+
+      const number = document.createElement("span");
+      number.className = "rep-number";
+      number.textContent = `#${rep}`;
+
+      const when = new Date(jump.time);
+      const timeCell = document.createElement("div");
+      const time = document.createElement("time");
+      time.className = "rep-time";
+      time.dateTime = when.toISOString();
+      time.textContent = formatTime(when);
+      const detail = document.createElement("span");
+      detail.className = "rep-detail";
+      detail.textContent = `${jump.flightMs.toFixed(0)} ms flight · ${jump.peakG.toFixed(1)} g landing`;
+      timeCell.append(time, detail);
+
+      const value = document.createElement("span");
+      value.className = "rep-value";
+      value.append(document.createTextNode(`${jump.heightCm.toFixed(1)} `));
+      const unit = document.createElement("span");
+      unit.textContent = `cm · ${(jump.heightCm / CM_PER_INCH).toFixed(1)} in`;
+      value.append(unit);
+
+      item.append(number, timeCell, value);
+      return item;
+    }
+
+    function renderHistory() {
+      historyList.replaceChildren();
+      if (history.length === 0) {
+        historyList.append(emptyHistory);
+      } else {
+        history.forEach((jump, index) => historyList.prepend(historyItem(jump, index + 1)));
+      }
+      jumpCount.textContent = `${history.length} ${history.length === 1 ? "rep" : "reps"}`;
+      renderLatest();
+    }
+
+    function addJump(jump) {
+      history.push(jump);
+      if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
+      saveHistory();
+      renderHistory();
+      setMessage("New jump recorded.");
+      playChime();
+    }
+
+    function handleJumpNotification(event) {
+      const view = event.target.value;
+      if (view.byteLength < 9 || view.getUint8(0) !== 1) {
+        setMessage("Tracker sent an unknown jump format - update the dashboard or firmware.", true);
+        return;
+      }
+      const deviceNumber = view.getUint16(1, true);
+      if (deviceNumber === lastDeviceJumpNumber) return;  // duplicate delivery
+      lastDeviceJumpNumber = deviceNumber;
+      addJump({
+        time: Date.now(),
+        flightMs: view.getUint16(3, true) / 10,
+        heightCm: view.getUint16(5, true) / 10,
+        peakG: view.getUint16(7, true) / 100
+      });
+    }
+
+    function showDetectorStatus(view) {
+      if (view.byteLength < 5) return;
+      const state = view.getUint8(0);
+      const event = view.getUint8(1);
+      const reason = view.getUint8(2);
+      const rejectedMs = view.getUint16(3, true);
+
+      if (event === EVENT.REJECTED && rejectedMs >= MIN_REJECT_TO_SHOW_MS && REJECT_TEXT[reason]) {
+        setLiveStatus(`Ignored (${rejectedMs} ms): ${REJECT_TEXT[reason]}`, "warn");
+        return;
+      }
+      if (state === STATE.FLIGHT || state === STATE.LANDING) {
+        setLiveStatus("In the air…", "air");
+      } else if (state === STATE.ARMED) {
+        setLiveStatus("Ready - jump!", "ready");
+      } else if (event !== EVENT.REJECTED || liveStatus.dataset.tone !== "warn") {
+        setLiveStatus("Stand still to arm…", "idle");
+      }
+    }
+
+    function handleStatusNotification(event) {
+      showDetectorStatus(event.target.value);
+    }
+
+    function onDisconnected() {
+      characteristics = [];
+      setConnection(false);
+      setMessage("Tracker disconnected. Connect again when ready.");
+    }
+
+    async function disconnectTracker() {
+      if (!trackerDevice?.gatt?.connected) return;
+      for (const [characteristic, handler] of characteristics) {
+        try {
+          await characteristic.stopNotifications();
+          characteristic.removeEventListener("characteristicvaluechanged", handler);
+        } catch (_) {
+          // The link may already have dropped.
+        }
+      }
+      trackerDevice.gatt.disconnect();
+      onDisconnected();
+    }
+
+    async function subscribe(service, uuid, handler) {
+      const characteristic = await service.getCharacteristic(uuid);
+      characteristic.addEventListener("characteristicvaluechanged", handler);
+      await characteristic.startNotifications();
+      characteristics.push([characteristic, handler]);
+      return characteristic;
+    }
+
+    async function connectTracker() {
+      if (!("bluetooth" in navigator)) {
+        setMessage("Web Bluetooth is not available here. Use Chrome on Android or desktop, over HTTPS or localhost.", true);
+        return;
+      }
+
+      connectButton.disabled = true;
+      setMessage(`Looking for ${DEVICE_NAME}…`);
+      try {
+        const devicePromise = navigator.bluetooth.requestDevice({
+          filters: [{ name: DEVICE_NAME }],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        if ("AudioContext" in window) {
+          audioContext ??= new AudioContext();
+          audioContext.resume().catch(() => {});
+        }
+
+        trackerDevice = await devicePromise;
+        trackerDevice.removeEventListener("gattserverdisconnected", onDisconnected);
+        trackerDevice.addEventListener("gattserverdisconnected", onDisconnected);
+
+        const server = await trackerDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        const jumpCharacteristic = await subscribe(service, JUMP_UUID, handleJumpNotification);
+        const statusCharacteristic = await subscribe(service, STATUS_UUID, handleStatusNotification);
+
+        // Don't replay the tracker's last stored jump as a new one.
+        const lastJump = await jumpCharacteristic.readValue();
+        lastDeviceJumpNumber = lastJump.byteLength >= 9 ? lastJump.getUint16(1, true) : null;
+
+        setConnection(true);
+        setMessage("Connected. Stand still until it says Ready, then jump.");
+        showDetectorStatus(await statusCharacteristic.readValue());
+      } catch (error) {
+        if (error.name === "NotFoundError") {
+          setMessage("No tracker selected. Make sure it is powered on and nearby.", true);
+        } else if (error.name === "NotAllowedError") {
+          setMessage("Bluetooth access was cancelled or denied.", true);
+        } else {
+          setMessage(`Could not connect: ${error.message || "check the tracker and try again"}`, true);
+        }
+        if (trackerDevice?.gatt?.connected) trackerDevice.gatt.disconnect();
+        setConnection(false);
+      } finally {
+        connectButton.disabled = false;
+      }
+    }
+
+    connectButton.addEventListener("click", async () => {
+      if (trackerDevice?.gatt?.connected) {
+        await disconnectTracker();
+      } else {
+        await connectTracker();
+      }
+    });
+
+    clearButton.addEventListener("click", () => {
+      if (history.length === 0) return;
+      if (clearButton.dataset.confirm !== "true") {
+        clearButton.dataset.confirm = "true";
+        clearButton.textContent = "Tap again to clear";
+        clearConfirmTimer = setTimeout(() => {
+          clearButton.dataset.confirm = "false";
+          clearButton.textContent = "Clear";
+        }, 3000);
+        return;
+      }
+      clearTimeout(clearConfirmTimer);
+      clearButton.dataset.confirm = "false";
+      clearButton.textContent = "Clear";
+      history = [];
+      saveHistory();
+      renderHistory();
+      setMessage("History cleared.");
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>
